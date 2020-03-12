@@ -16,7 +16,9 @@ logger = logging.getLogger(LOGGER_NAME)
 class Vocabulary(object):
     """
     --> builds vocabulary
-    --> can add words
+    --> functionality:
+                    => token to and fro idx, append '<unk>' and '<pad>' tokens to existing list of words
+                    => save/load vocabulary
     """
 
     def __init__(self):
