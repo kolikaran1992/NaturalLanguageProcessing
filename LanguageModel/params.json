@@ -1,3 +1,5 @@
 {
-    "min_count": 10
+    "min_count": 10,
+    "max_seq_len" : 50,
+    "max_token_len": 15
 }
