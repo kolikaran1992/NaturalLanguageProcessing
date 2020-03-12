@@ -1,0 +1,5 @@
+.idea/
+*/__pycache__/*
+venv/
+LanguageModel/saved_models/*
+!LanguageModel/saved_models/.gitkeep
