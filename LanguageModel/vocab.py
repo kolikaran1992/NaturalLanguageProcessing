@@ -60,6 +60,10 @@ class Vocabulary(object):
         """
         return self._vocab2int['<end>']
 
+    def __getitem__(self, item):
+        return self._int2vocab[item] if not isinstance(item, str) else self._vocab2int[
+            item] if item in self._vocab2int else self._vocab2int['<unk>']
+
     def save(self, path):
         """
         :param path: exact path where vocab needs to be saved

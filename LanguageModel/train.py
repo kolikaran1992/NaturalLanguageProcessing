@@ -33,10 +33,9 @@ if __name__ == '__main__':
     # processor.print_stats()
     #
     # processor.save('temp')
-    #
+
     p = TextProcessor()
     p.load('temp')
     obj = p.convert_batch(['I have the power .'.split(' ')]*2)
-    print(obj['words'])
-    print(obj['chars'])
-    print(obj['outs'])
+    #print(obj['words'])
+    #print(obj['chars'])
