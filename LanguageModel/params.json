@@ -1,5 +1,7 @@
 {
     "min_count": 10,
     "max_seq_len" : 50,
-    "max_token_len": 15
+    "max_token_len": 15,
+    "dtype_int": "int32",
+    "dtype_float": "float32"
 }
