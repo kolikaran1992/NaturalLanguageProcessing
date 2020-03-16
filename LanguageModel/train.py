@@ -1,10 +1,9 @@
 from argparse import ArgumentParser
 from pathlib import Path
-from LanguageModel.__logger__ import LOGGER_NAME
+from __logger__ import LOGGER_NAME
 import logging
 from LanguageModel.text_processor import TextProcessor
-from .__utils__ import token_extractor
-from .__paths__ import root
+from __paths__ import path_to_lm
 import json
 from .model import LanguageModel
 from keras.utils import Sequence
@@ -12,7 +11,7 @@ import math
 import numpy as np
 from keras.optimizers import rmsprop
 
-with open(root.joinpath('params.json'), 'r') as f:
+with open(path_to_lm.joinpath('params.json'), 'r') as f:
     params = json.load(f)
 
 logger = logging.getLogger(LOGGER_NAME)

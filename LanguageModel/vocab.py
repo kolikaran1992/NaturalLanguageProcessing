@@ -1,5 +1,5 @@
 import json
-from .__logger__ import LOGGER_NAME
+from __logger__ import LOGGER_NAME
 import logging
 
 logger = logging.getLogger(LOGGER_NAME)

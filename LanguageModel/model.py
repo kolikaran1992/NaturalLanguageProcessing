@@ -1,16 +1,15 @@
 from keras.models import Model, Input
 from keras.layers import LSTM, Embedding, Dense, TimeDistributed, Dropout, Conv1D, MaxPool1D, \
     Flatten, concatenate
-from .__layers__ import *
-from .__logger__ import LOGGER_NAME
+from __layers__ import *
+from __logger__ import LOGGER_NAME
 import logging
-from .__paths__ import root, path_to_models
+from __paths__ import path_to_lm, path_to_models
 import json
-import numpy as np
 
 logger = logging.getLogger(LOGGER_NAME)
 
-with open(root.joinpath('params.json'), 'r') as f:
+with open(path_to_lm.joinpath('params.json'), 'r') as f:
     params = json.load(f)
 
 

@@ -1,6 +1,6 @@
 import logging
 
-LOGGER_NAME = 'LanguageModel'
+LOGGER_NAME = 'NLP'
 
 logger = logging.getLogger(LOGGER_NAME)
 

@@ -1,6 +1,6 @@
-from .__logger__ import LOGGER_NAME
+from __logger__ import LOGGER_NAME
 import logging
-from .__tokenizer__ import word_tokenizer
+from __tokenizer__ import word_tokenizer
 from pathlib import Path
 from collections import Counter
 import time

@@ -1,15 +1,15 @@
 from keras.preprocessing.sequence import pad_sequences
 from keras.utils import to_categorical
 import numpy as np
-from .__logger__ import LOGGER_NAME
+from __logger__ import LOGGER_NAME
 import logging
 from .vocab import Vocabulary
-from .__paths__ import path_to_models, root
+from __paths__ import path_to_models, path_to_lm
 import json
 
 logger = logging.getLogger(LOGGER_NAME)
 
-with open(root.joinpath('params.json'), 'r') as f:
+with open(path_to_lm.joinpath('params.json'), 'r') as f:
     params = json.load(f)
 
 
