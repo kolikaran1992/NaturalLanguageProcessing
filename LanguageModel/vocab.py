@@ -14,8 +14,18 @@ class Vocabulary(object):
     """
 
     def __init__(self):
-        self._vocab2int = {}
-        self._int2vocab = {}
+        self._vocab2int = None
+        self._int2vocab = None
+
+    def __len__(self):
+        return len(self._vocab2int)
+
+    def __getitem__(self, item):
+        if self._vocab2int is None:
+            logger.error('trying to access elements from empty vocabulary')
+            return None
+        return self._int2vocab[item] if not isinstance(item, str) else self._vocab2int[
+            item] if item in self._vocab2int else self._vocab2int['<unk>']
 
     def build(self, all_toks):
         """
@@ -60,10 +70,6 @@ class Vocabulary(object):
         """
         return self._vocab2int['<end>']
 
-    def __getitem__(self, item):
-        return self._int2vocab[item] if not isinstance(item, str) else self._vocab2int[
-            item] if item in self._vocab2int else self._vocab2int['<unk>']
-
     def save(self, path):
         """
         :param path: exact path where vocab needs to be saved
@@ -86,6 +92,3 @@ class Vocabulary(object):
         self.__setattr__('_int2vocab', {int(idx): tok for tok, idx in vocab2int.items()})
 
         logger.info('vocabulary loaded successfully from {}'.format(path))
-
-    def __len__(self):
-        return len(self._vocab2int)

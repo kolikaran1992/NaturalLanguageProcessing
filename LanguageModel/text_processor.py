@@ -1,8 +1,6 @@
-from nltk.tokenize import RegexpTokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.utils import to_categorical
 import numpy as np
-from .__utils__ import get_vocab
 from .__logger__ import LOGGER_NAME
 import logging
 from .vocab import Vocabulary
@@ -24,8 +22,8 @@ class TextProcessor(object):
                  max_seq_len=None,
                  max_char_len=None
                  ):
-        self._word_vocab = None
-        self._char_vocab = None
+        self._word_vocab = Vocabulary()
+        self._char_vocab = Vocabulary()
 
         ## params
         self._max_seq_len = max_seq_len
