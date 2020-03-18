@@ -17,9 +17,12 @@ class LanguageModel(object):
     def __init__(self,
                  word_embedding_size=None,
                  char_embedding_size=None,
+                 text_cls_embedding_size=None,
                  word_inp_mask_val=None,
+                 text_cls_inp_mask=None,
                  word_vocab_size=None,
                  char_vocab_size=None,
+                 text_cls_vocab_size=None,
                  max_seq_len=None,
                  max_word_len=None,
                  char_cnn_filters=None,
@@ -32,9 +35,12 @@ class LanguageModel(object):
         self._max_word_len = max_word_len
         self._word_emb_size = word_embedding_size
         self._char_emb_size = char_embedding_size
+        self._txt_cls_emb_size = text_cls_embedding_size
         self._word_inp_mask = word_inp_mask_val
+        self._txt_cls_inp_mask = text_cls_inp_mask
         self._word_vocab_size = word_vocab_size
         self._char_vocab_size = char_vocab_size
+        self._txt_cls_vocab_size = text_cls_vocab_size
         self._char_cnn_filters = char_cnn_filters
         self._char_cnn_ker_size = char_cnn_ker_size
         self._char_cnn_pool_size = char_cnn_pool_size
@@ -53,6 +59,20 @@ class LanguageModel(object):
                              input_length=self._max_seq_len,
                              name='word_embeddings', trainable=train_wts)(masked_word_in)
         return emb_word
+
+    def _txt_cls_embedding_layer(self, txt_cls_in, train_wts=True):
+        """
+        --> get word embeddings
+        :param txt_cls_in: tensor of text class idxs (2d)
+        :param train_wts: (boolean) if True then wts will be trained
+        :return: a sequence of text class vectors
+        """
+        masked_txt_cls_in = Mask(mask_value=self._txt_cls_inp_mask, name='masked_text_class_inputs')(txt_cls_in)
+        emb_txt_cls = Embedding(input_dim=self._txt_cls_vocab_size,
+                                output_dim=self._txt_cls_emb_size,
+                                input_length=self._max_seq_len,
+                                name='txt_cls_embeddings', trainable=train_wts)(masked_txt_cls_in)
+        return emb_txt_cls
 
     def _char_embedding_layer(self, char_in, train_wts=True):
         """
@@ -77,19 +97,21 @@ class LanguageModel(object):
 
         return emb_char
 
-    def _embedding_layer(self, word_in, char_in, train_wts=True):
+    def _embedding_layer(self, word_in, char_in, text_cls_in, train_wts=True):
         """
         --> final embedding layer
         --> merge all embeddings
         :param word_in: tensor of word idxs (2d)
         :param char_in: tensor of char idxs (3d)
+        :param text_cls_in: tensor of text class idxs (2d)
         :param train_wts: (boolean) if True then wts will be trained
         :return: final merged embeddings
         """
         word_emb = self._word_embedding_layer(word_in, train_wts=train_wts)
         char_emb = self._char_embedding_layer(char_in, train_wts=train_wts)
+        text_class_emb = self._txt_cls_embedding_layer(text_cls_in, train_wts=train_wts)
 
-        merged_embedding = concatenate([word_emb, char_emb], name='merged_embeddings')
+        merged_embedding = concatenate([word_emb, char_emb, text_class_emb], name='merged_embeddings')
         final_emb = PosEmb(self._max_seq_len, merged_embedding.shape[-1], name='final_embedding')(merged_embedding)
 
         return final_emb
@@ -127,8 +149,9 @@ class LanguageModel(object):
         word_in = Input(shape=(self._max_seq_len,), name='token_inputs', dtype=params.get('dtype_int'))
         char_in = Input(shape=(self._max_seq_len, self._max_word_len,), name='char_inputs',
                         dtype=params.get('dtype_int'))
+        text_class_in = Input(shape=(self._max_seq_len,), name='text_class_inputs', dtype=params.get('dtype_int'))
 
-        embedding_layer = self._embedding_layer(word_in, char_in, train_wts=True)
+        embedding_layer = self._embedding_layer(word_in, char_in, text_class_in, train_wts=True)
 
         _, l2r_lstm = self._elmo_lstm_out(embedding_layer, name='l2r_lstm', rev=False, train_wts=True)
         _, r2l_lstm = self._elmo_lstm_out(embedding_layer, name='r2l_lstm', rev=True, train_wts=True)
@@ -138,15 +161,16 @@ class LanguageModel(object):
 
         model = TimeDistributed(Dense(self._word_vocab_size, name='token_prediction', activation='softmax'),
                                 name='time_dist_token_pred_layer')(merged)
-        model = Model(inputs=[word_in, char_in], outputs=[model], name='LanguageModel')
+        model = Model(inputs=[word_in, char_in, text_class_in], outputs=[model], name='LanguageModel')
         self._model = model
         return self._model
 
-    def save(self, name):
+    def save(self, name, params_only=True):
         """
         --> saves model params to "LanguageModel/saved_models/name/model_params.json"
         --> saves model wts to "LanguageModel/saved_models/name/wts.h5"
         :param name (str): name for saving the model
+        :param params_only: if True wts will not be saved
         :return: None
         """
         path_to_vocab = path_to_language_models.joinpath(name)
@@ -156,7 +180,10 @@ class LanguageModel(object):
             all_items = {k: v for k, v in self.__dict__.items() if k not in ['_model']}
             json.dump(all_items, f)
 
-        self._model.save_weights(path_to_vocab.joinpath('wts.h5'))
+        if not params_only:
+            self._model.save_weights(path_to_vocab.joinpath('wts.h5'))
+        else:
+            logger.info('not saving wts of the language model {}'.format(name))
 
         logger.info('language model saved successfully at {}'.format(path_to_vocab))
 

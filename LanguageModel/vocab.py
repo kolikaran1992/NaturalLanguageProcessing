@@ -27,15 +27,16 @@ class Vocabulary(object):
         return self._int2vocab[item] if not isinstance(item, str) else self._vocab2int[
             item] if item in self._vocab2int else self._vocab2int['<unk>']
 
-    def build(self, all_toks):
+    def build(self, all_toks, extras):
         """
         --> resets vocabulary (vocab2int, int2vocab)
         --> filters tokens by min count
-        --> adds unk, pad token
+        --> adds extras
         :param all_words: list of tokens
+        :param extras: list of extra tokens (end, pad, unk)
         :return: None
         """
-        extras = ['<unk>', '<pad>', '<end>']
+        # extras = ['<unk>', '<pad>', '<end>']
         self._vocab2int = {tok: idx for idx, tok in enumerate(all_toks + extras)}
         self._int2vocab = {idx: tok for idx, tok in enumerate(all_toks + extras)}
 

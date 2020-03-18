@@ -42,27 +42,32 @@ args = parser.parse_args()
 
 class BatchGenerator(Sequence):
     """
-    --> yield batches of model input data given all texts
+    --> yield batches of model input data given all texts and their corresponding classes
     --> all texts is a list of list, each sublist os a list of tokens
     """
 
-    def __init__(self, all_texts, shuffle=True, batch_size=32, text_transformer=None):
+    def __init__(self, all_texts, all_classes, shuffle=True, batch_size=32, text_transformer=None):
         self.all_texts = all_texts
+        self.all_classes = all_classes
+        self._idxs = list(range(len(all_texts)))
         self.batch_size = batch_size
         self.shuffle = shuffle
         self._text_transformer = text_transformer
 
     def __getitem__(self, idx):
-        batch_texts = self.all_texts[idx * self.batch_size: (idx + 1) * self.batch_size]
-        obj_batch = self._text_transformer.convert_batch(batch_texts, get_outs=True)
-        return [obj_batch['words'], obj_batch['chars']], obj_batch['outs']
+        batch_idxs = self._idxs[idx * self.batch_size: (idx + 1) * self.batch_size]
+        batch_texts = [self.all_texts[i] for i in batch_idxs]
+        batch_cls = [self.all_classes[i] for i in batch_idxs]
+
+        obj_batch = self._text_transformer.convert_batch(batch_texts, batch_cls, get_outs=True)
+        return [obj_batch['words'], obj_batch['chars'], obj_batch['class']], obj_batch['outs']
 
     def __len__(self):
         return math.ceil(len(self.all_texts) / self.batch_size)
 
     def on_epoch_end(self):
         if self.shuffle:
-            np.random.shuffle(self.all_texts)
+            np.random.shuffle(self._idxs)
 
 
 def get_saver(name, save_pd):
@@ -110,10 +115,14 @@ if __name__ == '__main__':
 
     model, text_processor = wrapper.get_model()
 
-    train_gen = BatchGenerator(['I have the power'.split()] * 2, text_transformer=text_processor, batch_size=4)
+    train_gen = BatchGenerator(['I have the power'.split()] * 2, ['sdc'] * 2, text_transformer=text_processor,
+                               batch_size=4)
     val_gen = BatchGenerator(['He man'.split(), 'To be or not to be'.split(),
                               'that is the question'.split(), 'we must be willing to know that we do not know'.split()],
+                             ['sdc'] * 4,
                              text_transformer=text_processor, batch_size=4)
+
+    print(val_gen[0][0][-1])
 
     opt = rmsprop(lr=0.001)
     loss = 'categorical_crossentropy'

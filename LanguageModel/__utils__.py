@@ -4,6 +4,7 @@ from __tokenizer__ import word_tokenizer
 from pathlib import Path
 from collections import Counter
 import time
+import json
 
 logger = logging.getLogger(LOGGER_NAME)
 
@@ -23,13 +24,12 @@ def get_vocab(all_tokenized_texts, min_count=None):
     return vocab
 
 
-def token_extractor(file_path, sep='\n', min_count=None):
+def token_extractor(file_path, min_count=None):
     """
     --> read file at file_path
     --> extract all tokens from this file
     --> ignore words with global minimum count less than threshold
     :param file_path: str path
-    :param sep: seperator which seperates each sentence in the text
     :param min_count: threshold for ignoring words on the basis of count
     :return: list of tokens after trimming by params[min_count]
     """
@@ -38,8 +38,9 @@ def token_extractor(file_path, sep='\n', min_count=None):
         exit(0)
 
     with open(file_path, 'r', encoding='utf-8') as f:
-        text = f.read()
+        obj = json.load(f)
 
-    all_tok_text = [word_tokenizer.tokenize(sent) for sent in text.split(sep)]
-
-    return get_vocab(all_tok_text, min_count=min_count)
+    all_tok_text = [word_tokenizer.tokenize(item['text']) for item in obj]
+    all_text_classes = list(set([item['journal_type'] for item in obj]))
+    del obj
+    return get_vocab(all_tok_text, min_count=min_count), all_text_classes

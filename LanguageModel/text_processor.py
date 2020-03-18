@@ -24,27 +24,33 @@ class TextProcessor(object):
                  ):
         self._word_vocab = Vocabulary()
         self._char_vocab = Vocabulary()
+        self._text_cls_vocab = Vocabulary()
 
         ## params
         self._max_seq_len = max_seq_len
         self._max_char_len = max_char_len
 
-    def populate_vocab(self, all_tokens):
+    def populate_vocab(self, all_tokens, all_text_cls):
         """
         --> populate char and word vocabularies
         --> resets word, char vocabs
         :param all_tokens: list of all tokens to be kept in vocabulary
+        :param all_text_cls: list of all classes of texts
         :return: None
         """
         self._word_vocab = Vocabulary()
         self._char_vocab = Vocabulary()
+        self._text_cls_vocab = Vocabulary()
 
-        self._word_vocab.build(all_tokens)
+        self._word_vocab.build(all_tokens, ['<unk>', '<pad>', '<end>'])
         logger.info('successfully built word vocabulary')
 
         all_chars = list(set([ch for tok in all_tokens for ch in tok]))
-        self._char_vocab.build(all_chars)
+        self._char_vocab.build(all_chars, ['<unk>', '<pad>', '<end>'])
         logger.info('successfully built char vocabulary')
+
+        self._text_cls_vocab.build(all_text_cls, ['<unk>', '<pad>'])
+        logger.info('successfully built text class vocabulary')
 
     def save(self, name):
         """
@@ -58,11 +64,13 @@ class TextProcessor(object):
         path_to_vocab.mkdir(parents=True, exist_ok=True)
 
         with open(path_to_vocab.joinpath("vocab_meta.json"), 'w', encoding='utf-8') as f:
-            all_items = {k: v for k, v in self.__dict__.items() if k not in ['_word_vocab', '_char_vocab']}
+            all_items = {k: v for k, v in self.__dict__.items() if
+                         k not in ['_word_vocab', '_char_vocab', '_text_cls_vocab']}
             json.dump(all_items, f)
 
         self._word_vocab.save(path_to_vocab.joinpath('vocab_word.json'))
         self._char_vocab.save(path_to_vocab.joinpath('vocab_char.json'))
+        self._text_cls_vocab.save(path_to_vocab.joinpath('vocab_text_class.json'))
 
         logger.info('text transformer saved successfully at {}'.format(path_to_vocab))
 
@@ -89,6 +97,9 @@ class TextProcessor(object):
 
         self._char_vocab = Vocabulary()
         self._char_vocab.load(path_to_vocab.joinpath('vocab_char.json'))
+
+        self._text_cls_vocab = Vocabulary()
+        self._text_cls_vocab.load(path_to_vocab.joinpath('vocab_text_class.json'))
 
         logger.info('text transformer loaded successfully from {}'.format(path_to_vocab))
 
@@ -149,20 +160,24 @@ class TextProcessor(object):
 
         return self._word_vocab.to_idx(toks), padded_char_idxs
 
-    def convert_batch(self, batch_toks, get_outs=True):
+    def convert_batch(self, batch_toks, batch_cls, get_outs=True):
         """
         --> run self._convert_single_example for each item in batch
         --> pad word idxs
         :param get_outs (boolean): True if output for language model needs to be calculated
         :param batch_toks: list of list
                           --> Each sublist is a list of tokens
+        :param batch_cls: list, each item is the class of the corresponding text
         :return (2d np array, 3d np array): (padded toks, padded chars)
         """
         all_tok_inps = []
         all_char_inps = []
+        all_txt_cls_inps = []
 
-        for toks in batch_toks:
+        for toks, cls in zip(batch_toks, batch_cls):
             toks, chars = self._convert_single_example(toks)
+            temp_cls_inps = [cls] * len(toks)
+            all_txt_cls_inps.append(self._text_cls_vocab.to_idx(temp_cls_inps))
             all_tok_inps.append(toks)
             all_char_inps.append(chars)
 
@@ -171,6 +186,11 @@ class TextProcessor(object):
                                          truncating='post',
                                          value=self._word_vocab.pad_idx())
 
+        padded_txt_cls_inps = pad_sequences(all_txt_cls_inps, maxlen=self._max_seq_len, dtype=params.get('dtype_int'),
+                                            padding='post',
+                                            truncating='post',
+                                            value=self._text_cls_vocab.pad_idx())
+
         outs = self._get_outs(batch_toks) if get_outs else None
 
-        return {'words': padded_word_inps, 'chars': np.array(all_char_inps), 'outs': outs}
+        return {'words': padded_word_inps, 'chars': np.array(all_char_inps), 'class': padded_txt_cls_inps, 'outs': outs}

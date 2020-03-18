@@ -6,6 +6,7 @@
     "dtype_float": "float32",
     "word_emb_size" : 128,
     "char_emb_size": 32,
+    "text_class_emb_size": 8,
     "char_cnn_filters" : 64,
     "char_cnn_ker_size" : 8,
     "char_cnn_pool_size": 4,

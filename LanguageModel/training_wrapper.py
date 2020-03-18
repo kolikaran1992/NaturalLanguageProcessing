@@ -42,12 +42,11 @@ class TrainWrapper(object):
         :return: return text_processor
         """
         if not self._retrain:
-            all_tokens = token_extractor(file_path=self._texts_path, sep='s#e#p#e#r#a#t#o#r',
-                                         min_count=params.get('min_count'))
+            all_tokens, all_text_cls = token_extractor(file_path=self._texts_path, min_count=params.get('min_count'))
 
             processor = TextProcessor(max_seq_len=params.get('max_seq_len'),
                                       max_char_len=params.get('max_token_len'))
-            processor.populate_vocab(all_tokens)
+            processor.populate_vocab(all_tokens, all_text_cls)
             processor.save(self._model_name)
         else:
             processor = TextProcessor()
@@ -69,9 +68,12 @@ class TrainWrapper(object):
             lang_model = LanguageModel(
                 word_embedding_size=params.get('word_emb_size'),
                 char_embedding_size=params.get('char_emb_size'),
+                text_cls_embedding_size=params.get('text_class_emb_size'),
                 word_inp_mask_val=processor._word_vocab.pad_idx(),
+                text_cls_inp_mask=processor._text_cls_vocab.pad_idx(),
                 word_vocab_size=len(processor._word_vocab),
                 char_vocab_size=len(processor._char_vocab),
+                text_cls_vocab_size=len(processor._text_cls_vocab),
                 max_seq_len=params.get('max_seq_len'),
                 max_word_len=params.get('max_token_len'),
                 char_cnn_filters=params.get('char_cnn_filters'),
@@ -79,6 +81,7 @@ class TrainWrapper(object):
                 char_cnn_pool_size=params.get('char_cnn_pool_size'),
                 dropout=params.get('dropout')
             )
+            lang_model.save(self._model_name, params_only=True)
         return lang_model
 
     def get_model(self):
