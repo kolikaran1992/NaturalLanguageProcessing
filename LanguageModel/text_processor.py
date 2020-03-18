@@ -4,7 +4,7 @@ import numpy as np
 from __logger__ import LOGGER_NAME
 import logging
 from .vocab import Vocabulary
-from __paths__ import path_to_models, path_to_lm
+from __paths__ import path_to_language_models, path_to_lm
 import json
 
 logger = logging.getLogger(LOGGER_NAME)
@@ -54,7 +54,7 @@ class TextProcessor(object):
         :param name (str): name for saving the object
         :return: None
         """
-        path_to_vocab = path_to_models.joinpath(name)
+        path_to_vocab = path_to_language_models.joinpath(name)
         path_to_vocab.mkdir(parents=True, exist_ok=True)
 
         with open(path_to_vocab.joinpath("vocab_meta.json"), 'w', encoding='utf-8') as f:
@@ -74,7 +74,7 @@ class TextProcessor(object):
         :param name: name for loading the object
         :return: None
         """
-        path_to_vocab = path_to_models.joinpath(name)
+        path_to_vocab = path_to_language_models.joinpath(name)
         if not path_to_vocab.is_dir():
             logger.error('vocab object could not be loaded since "" is not a valid directory'.format(path_to_vocab))
             exit(1)

@@ -4,7 +4,7 @@ from keras.layers import LSTM, Embedding, Dense, TimeDistributed, Dropout, Conv1
 from __layers__ import *
 from __logger__ import LOGGER_NAME
 import logging
-from __paths__ import path_to_lm, path_to_models
+from __paths__ import path_to_lm, path_to_language_models
 import json
 
 logger = logging.getLogger(LOGGER_NAME)
@@ -149,7 +149,7 @@ class LanguageModel(object):
         :param name (str): name for saving the model
         :return: None
         """
-        path_to_vocab = path_to_models.joinpath(name)
+        path_to_vocab = path_to_language_models.joinpath(name)
         path_to_vocab.mkdir(parents=True, exist_ok=True)
 
         with open(path_to_vocab.joinpath("model_params.json"), 'w', encoding='utf-8') as f:
@@ -167,7 +167,7 @@ class LanguageModel(object):
         :param name (str): name for loading the model
         :return: None
         """
-        path_to_vocab = path_to_models.joinpath(name)
+        path_to_vocab = path_to_language_models.joinpath(name)
         if not path_to_vocab.is_dir():
             logger.error('language model could not be loaded since "" is not a valid directory'.format(path_to_vocab))
             exit(1)
