@@ -130,7 +130,7 @@ if __name__ == '__main__':
     model.summary()
 
     # prepare callbacks
-    all_callbacks = get_callbacks(model_name, tensorboard_dir, 10)
+    all_callbacks = get_callbacks(model_name, tensorboard_dir, 1)
 
     model.fit_generator(train_gen, steps_per_epoch=len(train_gen),
                         epochs=100, verbose=0, validation_data=val_gen, validation_steps=len(val_gen),
