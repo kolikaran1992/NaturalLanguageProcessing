@@ -64,12 +64,12 @@ class BatchGenerator(Sequence):
             np.random.shuffle(self.all_texts)
 
 
-def get_saver(name):
-    path = path_to_language_models.joinpath(model_name)
+def get_saver(name, save_pd):
+    path = path_to_language_models.joinpath(name)
     path.mkdir(parents=True, exist_ok=True)
     path = path.joinpath('weights.{epoch:02d}-{val_loss:.2f}.hdf5').as_posix()
     saver = ModelCheckpoint(path, monitor='val_perplexity', verbose=1, save_best_only=False, save_weights_only=True,
-                            mode='min', period=1)
+                            mode='min', period=save_pd)
     return saver
 
 
@@ -79,14 +79,14 @@ def get_tb_logs(tb_dir, name):
         return
 
     path = tb_dir.joinpath(name)
-    path.mkdir(exists_ok=True, parents=True)
+    path.mkdir(parents=True, exist_ok=True)
     path.joinpath('{}'.format(format(strftime("%Y-%m-%d %H:%M:%S", gmtime()))))
     tb_logs = LangModTensorBoard(log_dir=path.as_posix())
     return tb_logs
 
 
-def get_callbacks(name, tb_dir):
-    saver = get_saver(name)
+def get_callbacks(name, tb_dir, save_pd):
+    saver = get_saver(name, save_pd)
     perp_calc = Perplexity()
     tb_logs = get_tb_logs(tb_dir, name)
 
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     model.summary()
 
     # prepare callbacks
-    all_callbacks = get_callbacks(model_name, tensorboard_dir)
+    all_callbacks = get_callbacks(model_name, tensorboard_dir, 10)
 
     model.fit_generator(train_gen, steps_per_epoch=len(train_gen),
                         epochs=100, verbose=1, validation_data=val_gen, validation_steps=len(val_gen),
