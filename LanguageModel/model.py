@@ -172,9 +172,9 @@ class LanguageModel(object):
             logger.error('language model could not be loaded since "" is not a valid directory'.format(path_to_vocab))
             exit(1)
 
-        if not path_to_vocab.joinpath("model_params.json").is_file() or not path_to_vocab.joinpath('wts.h5').is_file():
+        if not path_to_vocab.joinpath("model_params.json").is_file():
             logger.error(
-                'language model could not be loaded since params/wts does not exists at {}'.format(path_to_vocab))
+                'language model could not be loaded since params do not exist at {}'.format(path_to_vocab))
 
         with open(path_to_vocab.joinpath("model_params.json"), 'r', encoding='utf-8') as f:
             obj = json.load(f)

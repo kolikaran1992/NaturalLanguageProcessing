@@ -3,17 +3,16 @@ from pathlib import Path
 
 from __logger__ import LOGGER_NAME
 import logging
-from LanguageModel.text_processor import TextProcessor
+from LanguageModel.training_wrapper import TrainWrapper
 from __paths__ import path_to_lm, path_to_language_models
 import json
-from .model import LanguageModel
 from keras.utils import Sequence
 import math
 import numpy as np
 from keras.optimizers import rmsprop
 from keras.callbacks import TensorBoard, ModelCheckpoint
-from callbacks.log_metrics import Perplexity
-from callbacks.tb_scalars import LangModTensorBoard
+from callbacks.metric_to_keras_logs import Perplexity
+from callbacks.tensorboard import ValidationMetrics
 from time import strftime, gmtime
 
 with open(path_to_lm.joinpath('params.json'), 'r') as f:
@@ -83,7 +82,7 @@ def get_tb_logs(tb_dir, name):
     path = tb_dir.joinpath(name)
     path.mkdir(parents=True, exist_ok=True)
     path.joinpath('{}'.format(format(strftime("%Y-%m-%d %H:%M:%S", gmtime()))))
-    tb_logs = LangModTensorBoard(log_dir=path.as_posix())
+    tb_logs = ValidationMetrics(log_dir=path.as_posix())
     return tb_logs
 
 
@@ -95,54 +94,26 @@ def get_callbacks(name, tb_dir, save_pd):
     return [cb for cb in [saver, perp_calc, tb_logs] if cb is not None]
 
 
-def get_lm(processor, name, retrain=False):
-    if retrain:
-        lang_model = LanguageModel()
-        lang_model.load(name)
-        return lang_model
-
-    lang_model = LanguageModel(
-        word_embedding_size=params.get('word_emb_size'),
-        char_embedding_size=params.get('char_emb_size'),
-        word_inp_mask_val=processor._word_vocab.pad_idx(),
-        word_vocab_size=len(processor._word_vocab),
-        char_vocab_size=len(processor._char_vocab),
-        max_seq_len=params.get('max_seq_len'),
-        max_word_len=params.get('max_token_len'),
-        char_cnn_filters=params.get('char_cnn_filters'),
-        char_cnn_ker_size=params.get('char_cnn_ker_size'),
-        char_cnn_pool_size=params.get('char_cnn_pool_size'),
-        dropout=params.get('dropout')
-    )
-    return lang_model
-
-
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    file_path = Path(args.file_path.replace("\\", ''))
+    file_path = Path(args.file_path)
     model_name = args.model_name
     tensorboard_dir = Path(args.tb_dir) if args.tb_dir else None
     retrain = True if int(args.retrain) == 1 else False
 
-    # all_tokens = token_extractor(file_path=file_path, sep='s#e#p#e#r#a#t#o#r', min_count=params.get('min_count'))
-    #
-    # processor = TextProcessor(max_seq_len=50, max_char_len=15)
-    # processor.populate_vocab(all_tokens)
-    #
-    # processor.print_stats()
-    #
-    # processor.save('temp')
+    wrapper = TrainWrapper(
+        model_name=model_name,
+        retrain=retrain,
+        texts_path=file_path
+    )
 
-    p = TextProcessor()
-    p.load(model_name)
-    lm = get_lm(p, model_name, retrain=retrain)
-    model = lm.get_model()
+    model, text_processor = wrapper.get_model()
 
-    train_gen = BatchGenerator(['I have the power'.split()] * 2, text_transformer=p, batch_size=4)
+    train_gen = BatchGenerator(['I have the power'.split()] * 2, text_transformer=text_processor, batch_size=4)
     val_gen = BatchGenerator(['He man'.split(), 'To be or not to be'.split(),
                               'that is the question'.split(), 'we must be willing to know that we do not know'.split()],
-                             text_transformer=p, batch_size=4)
+                             text_transformer=text_processor, batch_size=4)
 
     opt = rmsprop(lr=0.001)
     loss = 'categorical_crossentropy'
@@ -153,9 +124,5 @@ if __name__ == '__main__':
     all_callbacks = get_callbacks(model_name, tensorboard_dir, 10)
 
     model.fit_generator(train_gen, steps_per_epoch=len(train_gen),
-                        epochs=100, verbose=1, validation_data=val_gen, validation_steps=len(val_gen),
+                        epochs=100, verbose=0, validation_data=val_gen, validation_steps=len(val_gen),
                         callbacks=all_callbacks)
-
-    # obj = p.convert_batch(['I have the power .'.split(' ')]*2)
-    # print(obj['words'])
-    # print(obj['chars'])

@@ -2,17 +2,30 @@ from keras.callbacks import TensorBoard
 from __logger__ import LOGGER_NAME
 import tensorflow as tf
 import os
+import json
 
 import logging
 
 logger = logging.getLogger(LOGGER_NAME)
 
 
-class LangModTensorBoard(TensorBoard):
-    def __init__(self, log_dir='./logs', **kwargs):
+def create_embed_meta(embed_data, path):
+    obj = {
+        "tensor_name": name,
+        "metadata_path": "metadata_{}.tsv".format(name)
+    }
+
+    with open(os.path.join("metadata_{}.tsv".format(name)), 'w', encoding='utf-8') as f:
+        print(*words, sep='\n', end='', file=f)
+
+    return json.dumps(obj)
+
+
+class ValidationMetrics(TensorBoard):
+    def __init__(self, log_dir='./logs', embed_data={}, **kwargs):
         # Make the original `TensorBoard` log to a subdirectory 'training'
         training_log_dir = os.path.join(log_dir, 'training')
-        super(LangModTensorBoard, self).__init__(training_log_dir, **kwargs)
+        super().__init__(training_log_dir, **kwargs)
 
         # Log the validation metrics to a separate subdirectory
         self.val_log_dir = os.path.join(log_dir, 'validation')
@@ -20,7 +33,7 @@ class LangModTensorBoard(TensorBoard):
     def set_model(self, model):
         # Setup writer for validation metrics
         self.val_writer = tf.summary.FileWriter(self.val_log_dir)
-        super(LangModTensorBoard, self).set_model(model)
+        super().set_model(model)
 
     def on_epoch_end(self, epoch, logs=None):
         # Pop the validation logs and handle them separately with
@@ -38,4 +51,4 @@ class LangModTensorBoard(TensorBoard):
 
         # Pass the remaining logs to `TensorBoard.on_epoch_end`
         logs = {k: v for k, v in logs.items() if not k.startswith('val_')}
-        super(LangModTensorBoard, self).on_epoch_end(epoch, logs)
+        super().on_epoch_end(epoch, logs)
