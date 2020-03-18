@@ -184,6 +184,8 @@ class LanguageModel(object):
         # build model
         self.get_model()
 
-        self._model.load_weights(path_to_vocab.joinpath('wts.h5'))
+        wts_path = sorted(path_to_vocab.glob('*.h5'), key=lambda p: p.lstat().st_mtime)[-1]
+        self._model.load_weights(wts_path)
+        logger.info('name of loaded wts for language model {} = {}'.format(name, wts_path.name))
 
         logger.info('language model loaded successfully from {}'.format(path_to_vocab))
