@@ -14,6 +14,8 @@ from keras.callbacks import TensorBoard, ModelCheckpoint
 from callbacks.metric_to_keras_logs import Perplexity
 from callbacks.tensorboard import ValidationMetrics
 from time import strftime, gmtime
+from sklearn.model_selection import train_test_split
+from __tokenizer__ import word_tokenizer
 
 with open(path_to_lm.joinpath('params.json'), 'r') as f:
     params = json.load(f)
@@ -99,6 +101,15 @@ def get_callbacks(name, tb_dir, save_pd):
     return [cb for cb in [saver, perp_calc, tb_logs] if cb is not None]
 
 
+def get_train_val_idxs(length, val_size, random_state):
+    train_idxs, val_idxs, _, _ = train_test_split(
+        [idx for idx in range(length)], [None] * length, test_size=val_size,
+        random_state=random_state)
+    logger.info('total train samples = {}'.format(len(train_idxs)))
+    logger.info('total validation samples = {}'.format(len(val_idxs)))
+    return train_idxs, val_idxs
+
+
 if __name__ == '__main__':
     args = parser.parse_args()
 
@@ -106,6 +117,7 @@ if __name__ == '__main__':
     model_name = args.model_name
     tensorboard_dir = Path(args.tb_dir) if args.tb_dir else None
     retrain = True if int(args.retrain) == 1 else False
+    batch_size = 512
 
     wrapper = TrainWrapper(
         model_name=model_name,
@@ -115,14 +127,21 @@ if __name__ == '__main__':
 
     model, text_processor = wrapper.get_model()
 
-    train_gen = BatchGenerator(['I have the power'.split()] * 2, ['sdc'] * 2, text_transformer=text_processor,
-                               batch_size=4)
-    val_gen = BatchGenerator(['He man'.split(), 'To be or not to be'.split(),
-                              'that is the question'.split(), 'we must be willing to know that we do not know'.split()],
-                             ['sdc'] * 4,
-                             text_transformer=text_processor, batch_size=4)
+    with open(file_path, 'r', encoding='utf-8') as f:
+        obj = json.load(f)
 
-    print(val_gen[0][0][-1])
+    train_idxs, val_idxs = get_train_val_idxs(len(obj), 0.2, 37)
+
+    train_gen = BatchGenerator([word_tokenizer.tokenize(obj[i]['text']) for i in train_idxs],
+                               [obj[i]['journal_type'] for i in train_idxs],
+                               text_transformer=text_processor,
+                               batch_size=batch_size)
+    val_gen = BatchGenerator([word_tokenizer.tokenize(obj[i]['text']) for i in val_idxs],
+                             [obj[i]['journal_type'] for i in val_idxs],
+                             text_transformer=text_processor, batch_size=batch_size)
+
+    del obj, train_idxs, val_idxs
+
 
     opt = rmsprop(lr=0.001)
     loss = 'categorical_crossentropy'

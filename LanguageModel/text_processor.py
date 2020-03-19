@@ -149,7 +149,7 @@ class TextProcessor(object):
                                     => shape of 2d np.array = (self._max_seq_len, self._max_char_len)
         """
         ## convert words to list of char idxs
-        char_seqs = [self._char_vocab.to_idx(tok) for tok in toks]
+        char_seqs = [self._char_vocab.to_idx(tok) for tok in toks[:self._max_seq_len]]
         ## add padding idxs to match max_seq_len
         char_seqs += [[self._char_vocab.pad_idx()]] * (self._max_seq_len - len(toks))
 
@@ -179,7 +179,7 @@ class TextProcessor(object):
             temp_cls_inps = [cls] * len(toks)
             all_txt_cls_inps.append(self._text_cls_vocab.to_idx(temp_cls_inps))
             all_tok_inps.append(toks)
-            all_char_inps.append(chars)
+            all_char_inps.append(chars.tolist())
 
         padded_word_inps = pad_sequences(all_tok_inps, maxlen=self._max_seq_len, dtype=params.get('dtype_int'),
                                          padding='post',
