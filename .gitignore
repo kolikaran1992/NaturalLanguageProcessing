@@ -4,3 +4,5 @@ __pycache__/*
 venv/
 LanguageModel/saved_models/*
 !LanguageModel/saved_models/.gitkeep
+vocabulary/saved_objects/*
+!vocabulary/saved_objects/.gitkeep
