@@ -2,7 +2,7 @@
 */__pycache__/*
 __pycache__/*
 venv/
-LanguageModel/saved_models/*
-!LanguageModel/saved_models/.gitkeep
+LanguageModel/saved_wts/*
+!LanguageModel/saved_wts/.gitkeep
 vocabulary/saved_objects/*
 !vocabulary/saved_objects/.gitkeep

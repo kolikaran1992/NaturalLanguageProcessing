@@ -1,6 +1,10 @@
 import json
 from __logger__ import LOGGER_NAME
 import logging
+from argparse import ArgumentTypeError
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.ticker import PercentFormatter
 
 logger = logging.getLogger(LOGGER_NAME)
 
@@ -24,4 +28,25 @@ def str2bool(v):
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):
         return False
     else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        raise ArgumentTypeError('Boolean value expected.')
+
+
+def _plot_hist(data, cumulative=False):
+    # sns.distplot(token_lengths, norm_hist=True)
+    plt.hist(data, cumulative=cumulative, linewidth=1, edgecolor='black',
+             weights=np.ones(len(data)) / len(data))
+    plt.title('Sequence Length Distribution', fontdict={'size': 20})
+    plt.xlabel('Senquence Length', fontdict={'size': 15})
+    plt.ylabel('{}Percentage'.format('Cumulative ' if cumulative else ''), fontdict={'size': 15})
+    plt.gca().yaxis.set_major_formatter(PercentFormatter(1))
+    plt.grid(True, which='both')
+
+
+def save_hist(data, save_path):
+    plt.figure(figsize=(15, 5))
+    cumulative = [False, True]
+    for i in range(2):
+        plt.subplot(1, 2, i+1)
+        _plot_hist(data, cumulative=cumulative[i])
+    plt.savefig(save_path.joinpath('seq_len_dist.png'))
+    logger.info('sequence length distribution saved at {}'.format(save_path.joinpath('seq_len_dist.png')))

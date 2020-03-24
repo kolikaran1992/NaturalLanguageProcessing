@@ -6,7 +6,7 @@ from time import time
 from .tokenizer import get_tokens
 from collections import Counter
 from pathlib import Path
-from __utils__ import read_json, str2bool
+from __utils__ import read_json, str2bool, save_hist
 from .vocab import Vocabulary
 
 logger = logging.getLogger(LOGGER_NAME)
@@ -43,14 +43,12 @@ def collect_tokens(path, to_lower, keep_ascii_only, thresh):
     """
     obj = read_json(path)
 
-    logger.info('non ascii tokens will{}be ignored'.format(' ' if ascii_only else ' not '))
-    logger.info('text will{}be lower cased'.format(' ' if to_lower else ' not '))
-
-    word_toks, char_toks, filetype_toks = [], [], []
+    word_toks, char_toks, filetype_toks, tok_lens = [], [], [], []
     check_ascii = lambda x: all(ord(c) < 128 for c in x)
 
     for item in obj:
         tokens = [tok for tok in get_tokens(item['text'], lower=to_lower) if check_ascii(tok) and keep_ascii_only]
+        tok_lens.append(len(tokens))
         filetype_toks.append(item['filetype'])
         word_toks += tokens
         char_toks += [ch for tok in tokens for ch in tok]
@@ -65,7 +63,7 @@ def collect_tokens(path, to_lower, keep_ascii_only, thresh):
         logger.info(
             'term frequency thresh "{}" leaves {} tokens out of {} in {} vocabulary'.format(thresh, size, total_size,
                                                                                             n))
-    return word_vocab, char_vocab, file_type_vocab
+    return word_vocab, char_vocab, file_type_vocab, tok_lens
 
 
 def save_vocab(tokens, ex, p):
@@ -83,16 +81,21 @@ if __name__ == '__main__':
     ascii_only = args.ascii_only
     term_freq_thresh = args.tf_thresh
 
+    logger.info('non ascii tokens will{}be ignored'.format(' ' if ascii_only else ' not '))
+    logger.info('text will{}be lower cased'.format(' ' if lower else ' not '))
+
     if not vocab_name:
         logger.warning('no vocab name provided, setting vocab name to "temp"')
         vocab_name = 'temp'
 
     start = time()
-    words, chars, file_types = collect_tokens(file_path, lower, ascii_only, term_freq_thresh)
+    words, chars, file_types, token_lengths = collect_tokens(file_path, lower, ascii_only, term_freq_thresh)
     logger.info('time taken to collect tokens = {} s'.format(time() - start))
 
     path = path_to_saved_vocab.joinpath(vocab_name)
     path.mkdir(exist_ok=True, parents=True)
+
+    save_hist(token_lengths, path)
 
     for toks, extras, name in zip([words, chars, file_types], [['<unk>', '<pad>', '<end>']] * 2 + [['<unk>', '<pad>']],
                                   ['word', 'char', 'file_type']):
