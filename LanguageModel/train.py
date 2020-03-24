@@ -117,7 +117,7 @@ if __name__ == '__main__':
     model_name = args.model_name
     tensorboard_dir = Path(args.tb_dir) if args.tb_dir else None
     retrain = True if int(args.retrain) == 1 else False
-    batch_size = 512
+    batch_size = 16
 
     wrapper = TrainWrapper(
         model_name=model_name,
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     model, text_processor = wrapper.get_model()
 
     with open(file_path, 'r', encoding='utf-8') as f:
-        obj = json.load(f)
+        obj = json.load(f)[:100]
 
     train_idxs, val_idxs = get_train_val_idxs(len(obj), 0.2, 37)
 
