@@ -4,5 +4,5 @@ __pycache__/*
 venv/
 LanguageModel/saved_wts/*
 !LanguageModel/saved_wts/.gitkeep
-vocabulary/saved_objects/*
-!vocabulary/saved_objects/.gitkeep
+text_processor/saved_vocab/*
+!text_processor/saved_vocab/.gitkeep
