@@ -20,6 +20,15 @@ def read_json(path):
     return obj
 
 
+def save_json(obj, path):
+    if not path.parent.is_dir():
+        logger.error('json could not be saved because "{}" is not a valid directory'.format(path.as_posix()))
+        exit(2)
+
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(obj, f)
+
+
 def str2bool(v):
     if isinstance(v, bool):
         return v
@@ -42,11 +51,11 @@ def _plot_hist(data, cumulative=False):
     plt.grid(True, which='both')
 
 
-def save_hist(data, save_path):
+def save_seq_len_dist_hist(data, save_path):
     plt.figure(figsize=(15, 5))
     cumulative = [False, True]
     for i in range(2):
-        plt.subplot(1, 2, i+1)
+        plt.subplot(1, 2, i + 1)
         _plot_hist(data, cumulative=cumulative[i])
     plt.savefig(save_path.joinpath('seq_len_dist.png'))
     logger.info('sequence length distribution saved at {}'.format(save_path.joinpath('seq_len_dist.png')))
